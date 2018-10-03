@@ -66,13 +66,15 @@ class FileEntityNormalizer extends ContentEntityNormalizer implements Denormaliz
       }
 
       // @todo {@link https://www.drupal.org/node/2600360 Add revpos and other missing properties to the result array.}
-      $normalized['@attachment'] = [
-        'uuid' => $data->uuid(),
-        'uri' => $uri,
-        'content_type' => $data->getMimeType(),
-        'digest' => 'md5-' . base64_encode(md5($file_contents)),
-        'length' => $data->getSize(),
-        'data' => $file_data,
+      $normalized['_attachments'] = [
+        '@attachment' => [
+          'uuid' => $data->uuid(),
+          'uri' => $uri,
+          'content_type' => $data->getMimeType(),
+          'digest' => 'md5-' . base64_encode(md5($file_contents)),
+          'length' => $data->getSize(),
+          'data' => $file_data,
+        ]
       ];
     }
     return $normalized;
@@ -83,11 +85,11 @@ class FileEntityNormalizer extends ContentEntityNormalizer implements Denormaliz
    */
   public function denormalize($data, $class, $format = NULL, array $context = []) {
     $file = NULL;
-    if (!empty($data['@attachment']['uuid'])) {
+    if (!empty($data['_attachments']['@attachment']['uuid'])) {
       $workspace = isset($context['workspace']) ? $context['workspace'] : NULL;
       /** @var FileInterface $file */
-      $this->processFileAttachment->process($data['@attachment'], 'base64_stream', $workspace);
-      unset($data['@attachment']);
+      $this->processFileAttachment->process($data['_attachments']['@attachment'], 'base64_stream', $workspace);
+      unset($data['_attachments']['@attachment']);
     }
     return parent::denormalize($data, $class, $format, $context);
   }
@@ -97,7 +99,7 @@ class FileEntityNormalizer extends ContentEntityNormalizer implements Denormaliz
     // File entities are treated as standard content entities.
     if (in_array($type, ['Drupal\Core\Entity\ContentEntityInterface', 'Drupal\file\FileInterface'], TRUE)) {
       // If a document has _attachment then we assume it's a file entity.
-      if (!empty($data['@attachment'])) {
+      if (!empty($data['_attachments']['@attachment'])) {
         return TRUE;
       }
     }
