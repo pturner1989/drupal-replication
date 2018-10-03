@@ -46,6 +46,12 @@ interface AllDocsInterface {
    */
   public function inclusiveEnd($inclusive_end);
 
+    /**
+   * @param boolean $keys
+   * @return \Drupal\replication\AllDocs\AllDocsInterface
+   */
+  public function keys($keys);
+
   /**
    * @return array
    */

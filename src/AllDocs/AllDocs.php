@@ -67,6 +67,11 @@ class AllDocs implements AllDocsInterface {
    */
   protected $endKey;
 
+    /**
+   * @var string
+   */
+  protected $keys;
+
   /**
    * @var boolean
    */
@@ -136,6 +141,13 @@ class AllDocs implements AllDocsInterface {
     $this->inclusiveEnd = $inclusive_end;
   }
 
+    /**
+   * {@inheritdoc}
+   */
+  public function keys($keys) {
+    $this->keys = $keys;
+  }
+
   /**
    * {@inheritdoc}
    *
@@ -155,6 +167,14 @@ class AllDocs implements AllDocsInterface {
           if ($entity_type->get('workspace') !== FALSE) {
             $query->condition('workspace', $this->workspace->id());
           }
+          if($this->keys) {
+            $group = $query
+              ->orConditionGroup();
+              foreach($this->keys as $key) {
+              $group->condition('uuid', $key);
+              }
+            $query->condition($group);
+          }
           $ids = $query->execute();
         }
         catch (\Exception $e) {
@@ -169,9 +189,9 @@ class AllDocs implements AllDocsInterface {
         $items = $this->entityIndex->getMultiple($keys);
         foreach ($items as $item) {
           if ($item['is_stub'] == TRUE) {
-            continue;
-          }
-          $rows[$item['uuid']] = ['rev' => $item['rev']];
+          continue;
+        }          
+        $rows[$item['uuid']] = ['rev' => $item['rev']];
         }
 
         if ($this->includeDocs) {
