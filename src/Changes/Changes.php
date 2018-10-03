@@ -105,6 +105,13 @@ class Changes implements ChangesInterface {
    * {@inheritdoc}
    */
   public function filter($filter) {
+        //test if filter name has been turned to name/name by pouchdb/couchdb and revert to single name
+        $split = explode("/", $filter);
+        //print(count($split));
+        if(count($split) === 2 && $split[0] === $split[1]) {
+          //print_r($split);
+          $filter = $split[0];
+        }
     $this->filter = $filter;
     return $this;
   }
@@ -191,7 +198,13 @@ class Changes implements ChangesInterface {
         $storage->useWorkspace($this->workspaceId);
         $revision = $storage->loadRevision($sequence['revision_id']);
         $storage->useWorkspace(NULL);
+         // Ignore broken revisions.
+         if(!$revision) {
+          continue;
+        }
       }
+
+            
 
       // Filter the document.
       if ($revision && $filter !== NULL && !$filter->filter($revision)) {
