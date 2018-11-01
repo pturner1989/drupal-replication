@@ -83,6 +83,11 @@ class ReplicationHistoryItem extends FieldItemBase {
       ->setDescription(t('Date and time when replication ended.'))
       ->setRequired(FALSE);
 
+    $properties['last_seq'] = DataDefinition::create('string')
+      ->setLabel(t('Last sequence'))
+      ->setDescription(t('Used by PouchDB instead of Recorded sequence'))
+      ->setRequired(FALSE);
+
     return $properties;
   }
 
@@ -146,6 +151,11 @@ class ReplicationHistoryItem extends FieldItemBase {
           'type' => 'varchar',
           'length' => 50,
           'not null' => FALSE,
+        ],
+        'recorded_seq' => [
+          'type' => 'varchar',
+          'length' => 512,
+          'not null' => TRUE,
         ],
       ],
     ];
