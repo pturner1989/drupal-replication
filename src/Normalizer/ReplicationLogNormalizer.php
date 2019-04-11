@@ -42,6 +42,14 @@ class ReplicationLogNormalizer extends NormalizerBase implements DenormalizerInt
    */
   public function normalize($entity, $format = NULL, array $context = []) {
     // Strictly format the entity how CouchDB expects it, plus our JSON-LD data.
+    $history = $this->serializer->normalize($entity->get('history'), $format, $context);
+    foreach ($history as $index => $item) {
+      foreach($item as $key => $value) {
+        if($value == NULL) {
+          unset($history[$index][$key]);
+        }
+      }
+    }
     $data = [
       '@context' => [
         '_id' => '@id',
@@ -49,9 +57,11 @@ class ReplicationLogNormalizer extends NormalizerBase implements DenormalizerInt
       '@type' => 'replication_log',
       '_id' => '_local/'. $entity->uuid(),
       '_rev' => $entity->_rev->value,
-      'history' => $this->serializer->normalize($entity->get('history'), $format, $context),
+      'history' => $history,
       'session_id' => $entity->getSessionId(),
       'source_last_seq' => $entity->getSourceLastSeq(),
+      'last_seq' => $history[0]['last_seq'],
+      'version' => 1,
     ];
 
     return $data;
@@ -64,23 +74,26 @@ class ReplicationLogNormalizer extends NormalizerBase implements DenormalizerInt
     $record = $this->uuidIndex->get($data['_id']);
     if (!empty($record['entity_type_id']) && !empty($record['entity_id'])) {
       $storage = $this->entityTypeManager->getStorage($record['entity_type_id']);
-      $entity = $storage->load($record['entity_id']);
+      $entity = $storage->load($record['entity_id']); 
       if ($entity instanceof ReplicationLogInterface) {
+      if(!isset($data['last_seq']) || $data['last_seq'] > 0) {
         foreach ($data as $name => $value) {
           $entity->{$name} = $value;
         }
+      }
         return $entity;
       }
     }
 
-    try {
-      $data['uuid'][0]['value'] = $data['_id'];
-      $entity = ReplicationLog::create($data);
-      return $entity;
-    }
-    catch(\Exception $e) {
-      watchdog_exception('Replication', $e);
-    }
+      try {
+        $data['uuid'][0]['value'] = $data['_id'];
+        $entity = ReplicationLog::create($data);
+        return $entity;
+      }
+      catch(\Exception $e) {
+        watchdog_exception('Replication', $e);
+      }
+  
   }
 
   public function supportsDenormalization($data, $type, $format = NULL) {

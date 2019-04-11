@@ -68,6 +68,11 @@ class ReplicationHistoryItem extends FieldItemBase {
       ->setDescription(t('Recorded intermediate sequence.'))
       ->setRequired(FALSE);
 
+    $properties['last_seq'] = DataDefinition::create('integer')
+      ->setLabel(t('Last sequence'))
+      ->setDescription(t('Used by PouchDB instead of Recorded sequence'))
+      ->setRequired(FALSE);
+
     $properties['session_id'] = DataDefinition::create('string')
       ->setLabel(t('Session ID'))
       ->setDescription(t('Unique session ID for the replication.'))
@@ -81,11 +86,6 @@ class ReplicationHistoryItem extends FieldItemBase {
     $properties['end_time'] = DataDefinition::create('datetime_iso8601')
       ->setLabel(t('End time'))
       ->setDescription(t('Date and time when replication ended.'))
-      ->setRequired(FALSE);
-
-    $properties['last_seq'] = DataDefinition::create('string')
-      ->setLabel(t('Last sequence'))
-      ->setDescription(t('Used by PouchDB instead of Recorded sequence'))
       ->setRequired(FALSE);
 
     return $properties;
@@ -122,6 +122,11 @@ class ReplicationHistoryItem extends FieldItemBase {
           'unsigned' => TRUE,
           'not null' => FALSE,
         ],
+        'last_seq' => [
+          'type' => 'int',
+          'length' => 512,
+          'not null' => TRUE,
+        ],
         'session_id' => [
           'type' => 'varchar',
           'length' => 128,
@@ -151,11 +156,6 @@ class ReplicationHistoryItem extends FieldItemBase {
           'type' => 'varchar',
           'length' => 50,
           'not null' => FALSE,
-        ],
-        'recorded_seq' => [
-          'type' => 'varchar',
-          'length' => 512,
-          'not null' => TRUE,
         ],
       ],
     ];
