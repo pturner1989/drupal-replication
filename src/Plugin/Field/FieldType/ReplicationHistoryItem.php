@@ -88,6 +88,17 @@ class ReplicationHistoryItem extends FieldItemBase {
       ->setDescription(t('Date and time when replication ended.'))
       ->setRequired(FALSE);
 
+    $properties['last_seq'] = DataDefinition::create('string')
+      ->setLabel(t('Last sequence'))
+      ->setDescription(t('Used by PouchDB instead of Recorded sequence'))
+      ->setRequired(FALSE);
+    $fields['fail_info'] = DataDefinition::create('string_long')
+      ->setLabel(t('Replication fail info'))
+      ->setDescription(t('When a replication fails, it contains the info about the cause of the fail.'))
+      ->setComputed(TRUE)
+      ->setRequired(FALSE)
+      ->setClass('\Drupal\replication\FailInfo');
+
     return $properties;
   }
 
