@@ -108,9 +108,9 @@ class Changes implements ChangesInterface {
         //test if filter name has been turned to name/name by pouchdb/couchdb and revert to single name
         $split = explode("/", $filter);
         //print(count($split));
-        if(count($split) === 2 && $split[0] === $split[1]) {
+        if(count($split) === 2 && ($split[0] === $split[1] || $split[0] === "_design")) {
           //print_r($split);
-          $filter = $split[0];
+          $filter = $split[1];
         }
     $this->filter = $filter;
     return $this;
