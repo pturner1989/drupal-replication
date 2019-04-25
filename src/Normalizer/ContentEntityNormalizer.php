@@ -26,7 +26,8 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Serializer\Exception\UnexpectedValueException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
-class ContentEntityNormalizer extends NormalizerBase implements DenormalizerInterface {
+class ContentEntityNormalizer extends NormalizerBase implements DenormalizerInterface
+{
 
   use FieldableEntityNormalizerTrait;
 
@@ -79,7 +80,8 @@ class ContentEntityNormalizer extends NormalizerBase implements DenormalizerInte
    * @param \Drupal\Core\Entity\EntityReferenceSelection\SelectionPluginManagerInterface $selection_manager
    * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher
    */
-  public function __construct(EntityManagerInterface $entity_manager, MultiversionIndexFactory $index_factory, LanguageManagerInterface $language_manager, UsersMapping $users_mapping, ModuleHandlerInterface $module_handler, SelectionPluginManagerInterface $selection_manager = NULL, EventDispatcherInterface $event_dispatcher = NULL) {
+  public function __construct(EntityManagerInterface $entity_manager, MultiversionIndexFactory $index_factory, LanguageManagerInterface $language_manager, UsersMapping $users_mapping, ModuleHandlerInterface $module_handler, SelectionPluginManagerInterface $selection_manager = NULL, EventDispatcherInterface $event_dispatcher = NULL)
+  {
     $this->entityManager = $entity_manager;
     $this->indexFactory = $index_factory;
     $this->languageManager = $language_manager;
@@ -92,7 +94,8 @@ class ContentEntityNormalizer extends NormalizerBase implements DenormalizerInte
   /**
    * {@inheritdoc}
    */
-  public function normalize($entity, $format = NULL, array $context = []) {
+  public function normalize($entity, $format = NULL, array $context = [])
+  {
     $workspace = isset($entity->workspace->entity) ? $entity->workspace->entity : null;
     $rev_tree_index = $this->indexFactory->get('multiversion.entity_index.rev.tree', $workspace);
 
@@ -133,22 +136,23 @@ class ContentEntityNormalizer extends NormalizerBase implements DenormalizerInte
             '@language' => $entity_language->getId(),
           ]
         ];
-      foreach ($translation as $name => $field) {
-        // Add data for each field (through the field's normalizer.
-        $field_type = $field_definitions[$name]->getType();
-        $items = $this->serializer->normalize($field, $format, $context);
-        if ($field_type == 'password') {
-          continue;
+      if (!isset($translation->_deleted->value) || $translation->_deleted->value == FALSE) {
+        foreach ($translation as $name => $field) {
+          // Add data for each field (through the field's normalizer.
+          $field_type = $field_definitions[$name]->getType();
+          $items = $this->serializer->normalize($field, $format, $context);
+          if ($field_type == 'password') {
+            continue;
+          }
+          $data[$entity_language->getId()][$name] = $items;
         }
-        $data[$entity_language->getId()][$name] = $items;
       }
       // Override the normalization for the _deleted special field, just so that we
       // follow the API spec.
       if (isset($translation->_deleted->value) && $translation->_deleted->value == TRUE) {
         $data[$entity_language->getId()]['_deleted'] = TRUE;
         $data['_deleted'] = TRUE;
-      }
-      elseif (isset($data[$entity_language->getId()]['_deleted'])) {
+      } elseif (isset($data[$entity_language->getId()]['_deleted'])) {
         unset($data[$entity_language->getId()]['_deleted']);
       }
     }
@@ -183,7 +187,8 @@ class ContentEntityNormalizer extends NormalizerBase implements DenormalizerInte
   /**
    * {@inheritdoc}
    */
-  public function denormalize($data, $class, $format = NULL, array $context = []) {
+  public function denormalize($data, $class, $format = NULL, array $context = [])
+  {
     // Make sure these values start as NULL
     $entity_type_id = NULL;
     $entity_uuid = NULL;
@@ -197,16 +202,14 @@ class ContentEntityNormalizer extends NormalizerBase implements DenormalizerInte
     // Resolve the UUID.
     if (empty($entity_uuid) && !empty($data['_id'])) {
       $entity_uuid = $data['_id'];
-    }
-    else {
+    } else {
       throw new UnexpectedValueException('The uuid value is missing.');
     }
 
     // Resolve the entity type ID.
     if (isset($data['@type'])) {
       $entity_type_id = $data['@type'];
-    }
-    elseif (!empty($context['entity_type'])) {
+    } elseif (!empty($context['entity_type'])) {
       $entity_type_id = $context['entity_type'];
     }
 
@@ -218,8 +221,7 @@ class ContentEntityNormalizer extends NormalizerBase implements DenormalizerInte
         $entity_id = $record['entity_id'];
         if (empty($entity_type_id)) {
           $entity_type_id = $record['entity_type_id'];
-        }
-        elseif ($entity_type_id != $record['entity_type_id']) {
+        } elseif ($entity_type_id != $record['entity_type_id']) {
           throw new UnexpectedValueException('The entity_type value does not match the existing UUID record.');
         }
       }
@@ -247,14 +249,17 @@ class ContentEntityNormalizer extends NormalizerBase implements DenormalizerInte
     $translations = [];
     foreach ($data as $key => $translation) {
       // Skip any keys that start with '_' or '@'.
-      if (in_array($key{0}, ['_', '@'])) {
+      if (in_array($key{
+      0}, ['_', '@'])) {
         continue;
       }
       // When language is configured, undefined or not applicable go ahead with
       // denormalization.
-      elseif (isset($site_languages[$key])
+      elseif (
+        isset($site_languages[$key])
         || $key === LanguageInterface::LANGCODE_NOT_SPECIFIED
-        || $key === LanguageInterface::LANGCODE_NOT_APPLICABLE) {
+        || $key === LanguageInterface::LANGCODE_NOT_APPLICABLE
+      ) {
         $context['language'] = $key;
         $translations[$key] = $this->denormalizeTranslation($translation, $entity_id, $entity_uuid, $entity_type_id, $bundle_key, $entity_type, $id_key, $context, $rev, $revisions);
       }
@@ -272,15 +277,13 @@ class ContentEntityNormalizer extends NormalizerBase implements DenormalizerInte
     $entity = NULL;
     if ($entity_id && $entity_type_id != 'file' && !empty($translations[$default_langcode])) {
       $entity = $this->createEntityInstance($translations[$default_langcode], $entity_type, $format, $context);
-    }
-    elseif ($entity_type_id == 'file' && !empty($translations[$default_langcode])) {
+    } elseif ($entity_type_id == 'file' && !empty($translations[$default_langcode])) {
       unset($translations[$default_langcode][$id_key], $translations[$default_langcode][$revision_key]);
       $translations[$default_langcode]['status'][0]['value'] = FILE_STATUS_PERMANENT;
       $translations[$default_langcode]['uid'][0]['target_id'] = $this->usersMapping->getUidFromConfig();
 
       $entity = $this->createEntityInstance($translations[$default_langcode], $entity_type, $format, $context);
-    }
-    elseif (!empty($translations[$default_langcode])) {
+    } elseif (!empty($translations[$default_langcode])) {
       unset($translations[$default_langcode][$id_key], $translations[$default_langcode][$revision_key]);
       $entity = $this->createEntityInstance($translations[$default_langcode], $entity_type, $format, $context);
     }
@@ -318,7 +321,8 @@ class ContentEntityNormalizer extends NormalizerBase implements DenormalizerInte
    * @param array $revisions
    * @return mixed
    */
-  private function denormalizeTranslation($translation, $entity_id, $entity_uuid, $entity_type_id, $bundle_key, $entity_type, $id_key, $context, $rev = null, array $revisions = []) {
+  private function denormalizeTranslation($translation, $entity_id, $entity_uuid, $entity_type_id, $bundle_key, $entity_type, $id_key, $context, $rev = null, array $revisions = [])
+  {
     // Add the _rev field to the $translation array.
     if (isset($rev)) {
       $translation['_rev'] = [['value' => $rev]];
@@ -347,8 +351,7 @@ class ContentEntityNormalizer extends NormalizerBase implements DenormalizerInte
         // Add bundle info when entity is not new.
         $bundle_id = $translation[$bundle_key][0]['value'];
         $translation[$bundle_key] = $bundle_id;
-      }
-      elseif (!empty($translation[$bundle_key][0]['target_id'])) {
+      } elseif (!empty($translation[$bundle_key][0]['target_id'])) {
         // Add bundle info when entity is new.
         $bundle_id = $translation[$bundle_key][0]['target_id'];
         $translation[$bundle_key] = $bundle_id;
@@ -380,8 +383,7 @@ class ContentEntityNormalizer extends NormalizerBase implements DenormalizerInte
           $type = $fields[$field_name]->getType();
           if ($type == 'link' && isset($item['entity_type_id'])) {
             $target_entity_type_id = $item['entity_type_id'];
-          }
-          else {
+          } else {
             $target_entity_type_id = $settings['target_type'];
           }
 
@@ -392,8 +394,7 @@ class ContentEntityNormalizer extends NormalizerBase implements DenormalizerInte
 
           if (isset($settings['handler_settings']['target_bundles'])) {
             $target_bundle_id = reset($settings['handler_settings']['target_bundles']);
-          }
-          else {
+          } else {
             // @todo: Update when {@link https://www.drupal.org/node/2412569
             // this setting is configurable}.
             $bundles = $this->entityManager->getBundleInfo($target_entity_type_id);
@@ -420,8 +421,7 @@ class ContentEntityNormalizer extends NormalizerBase implements DenormalizerInte
           if ($type == 'link' && $target_entity) {
             $id = $target_entity->id();
             $translation[$field_name][$delta]['uri'] = "entity:$target_entity_type_id/$id";
-          }
-          elseif ($target_entity) {
+          } elseif ($target_entity) {
             $translation[$field_name][$delta]['target_id'] = $target_entity->id();
             // Special handling for Entity Reference Revisions, it needs the
             // revision ID in addition to the primary entity ID.
@@ -448,9 +448,11 @@ class ContentEntityNormalizer extends NormalizerBase implements DenormalizerInte
 
             if (is_subclass_of($target_entity->getEntityType()->getStorageClass(), ContentEntityStorageInterface::class)) {
               // Set the target workspace if we have it in context.
-              if (isset($context['workspace'])
+              if (
+                isset($context['workspace'])
                 && ($context['workspace'] instanceof WorkspaceInterface)
-                && $target_entity->getEntityType()->get('workspace') !== FALSE) {
+                && $target_entity->getEntityType()->get('workspace') !== FALSE
+              ) {
                 $target_entity->workspace->target_id = $context['workspace']->id();
               }
               // Set the UUID to what we received to ensure it gets updated when
@@ -544,7 +546,8 @@ class ContentEntityNormalizer extends NormalizerBase implements DenormalizerInte
    *
    * @see \Drupal\serialization\Normalizer\FieldableEntityNormalizerTrait
    */
-  private function createEntityInstance(array $data, EntityTypeInterface $entity_type, $format, array $context = []) {
+  private function createEntityInstance(array $data, EntityTypeInterface $entity_type, $format, array $context = [])
+  {
     // The bundle property will be required to denormalize a bundleable
     // fieldable entity.
     if ($entity_type->entityClassImplements(FieldableEntityInterface::class)) {
@@ -554,16 +557,14 @@ class ContentEntityNormalizer extends NormalizerBase implements DenormalizerInte
         // Get an array containing the bundle only. This also remove the bundle
         // key from the $data array.
         $create_params = $this->extractBundleData($data, $entity_type);
-      }
-      else {
+      } else {
         $create_params = [];
       }
 
       // Create the entity from bundle data only, then apply field values after.
       $entity = $this->entityManager->getStorage($entity_type->id())->create($create_params);
       $this->denormalizeFieldData($data, $entity, $format, $context);
-    }
-    else {
+    } else {
       // Create the entity from all data.
       $entity = $this->entityManager->getStorage($entity_type->id())->create($data);
     }
@@ -577,7 +578,8 @@ class ContentEntityNormalizer extends NormalizerBase implements DenormalizerInte
    * @param $langcode
    * @return string
    */
-  protected function denormalizeMenuLinkParent($data, $context, $langcode) {
+  protected function denormalizeMenuLinkParent($data, $context, $langcode)
+  {
     if (strpos($data, 'menu_link_content') === 0) {
       list($type, $uuid, $id) = explode(':', $data);
       if ($type === 'menu_link_content' && $uuid && is_numeric($id)) {
@@ -586,8 +588,7 @@ class ContentEntityNormalizer extends NormalizerBase implements DenormalizerInte
         $parent = reset($parent);
         if ($parent instanceof MenuLinkContentInterface && $parent->id() && $parent->id() != $id) {
           return $type . ':' . $uuid . ':' . $parent->id();
-        }
-        elseif (!$parent) {
+        } elseif (!$parent) {
           // Create a new menu link as stub.
           $parent = $storage->create([
             'uuid' => $uuid,
@@ -596,8 +597,10 @@ class ContentEntityNormalizer extends NormalizerBase implements DenormalizerInte
           ]);
 
           // Set the target workspace if we have it in context.
-          if (isset($context['workspace'])
-            && ($context['workspace'] instanceof WorkspaceInterface)) {
+          if (
+            isset($context['workspace'])
+            && ($context['workspace'] instanceof WorkspaceInterface)
+          ) {
             $parent->workspace->target_id = $context['workspace']->id();
           }
           // Indicate that this revision is a stub.
@@ -609,5 +612,4 @@ class ContentEntityNormalizer extends NormalizerBase implements DenormalizerInte
     }
     return $data;
   }
-
 }
