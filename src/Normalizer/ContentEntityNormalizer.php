@@ -156,7 +156,7 @@ class ContentEntityNormalizer extends NormalizerBase implements DenormalizerInte
           "_id" => $entity_uuid,
           "_rev" => $entity->_rev->value,
           "_deleted" => TRUE
-        ]
+        ];
       } elseif (isset($data[$entity_language->getId()]['_deleted'])) {
         unset($data[$entity_language->getId()]['_deleted']);
       }
